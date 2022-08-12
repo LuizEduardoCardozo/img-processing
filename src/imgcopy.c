@@ -1,54 +1,101 @@
 #include <stdio.h>
+#include <stdlib.h>
+
+#define BMP_HEADER_SIZE 54
+#define BMP_COLOR_TABLE_SIZE 1024
+#define CUSTOM_IMG_SIZE 1024 * 1024
 
 #define byte unsigned char
 
+void imageReader(
+    const char *image_name,
+    int *_height,
+    int *_width,
+    int *_bitDepth,
+    byte *_header,
+    byte *_colorTable,
+    byte *buffer);
+
+void imageWritter(
+    const char *imageName,
+    byte *header,
+    byte *colorTable,
+    byte *buffer,
+    int bitDepth);
+
 int main()
 {
-    FILE *stream_in, *stream_out;
+    int width, height, bitDepth;
+
+    byte header[BMP_HEADER_SIZE];
+    byte colorTable[BMP_COLOR_TABLE_SIZE];
+    byte buffer[CUSTOM_IMG_SIZE];
+
+    const char imgName[] = "images/man.bmp";
+    const char copyImgName[] = "images/man_copy.bmp";
+
+    imageReader(imgName, &height, &width, &bitDepth, header, colorTable, buffer);
+    imageWritter(copyImgName, header, colorTable, buffer, bitDepth);
+
+    printf("Success! \n");
+}
+
+void imageReader(
+    const char *image_name,
+    int *_height,
+    int *_width,
+    int *_bitDepth,
+    byte *_header,
+    byte *_colorTable,
+    byte *buffer)
+{
+    FILE *stream_in;
 
     stream_in = fopen("images/cameraman.bmp", "rb");
-    stream_out = fopen("images/cameraman_copy.bmp", "wb");
 
     if (stream_in == (FILE *)0)
     {
         printf("Unable to open the file\n");
-        return 1;
+        exit(1);
     }
-
-    byte header[54];
-    byte color_table[1024];
 
     for (size_t i = 0; i < 54; i++)
     {
-        header[i] = getc(stream_in);
+        _header[i] = getc(stream_in);
     }
 
-    int width = *(int *)&header[18];
-    int height = *(int *)&header[22];
-    int bit_depth = *(int *)&header[28];
+    *_width = *(int *)&_header[18];
+    *_height = *(int *)&_header[22];
+    *_bitDepth = *(int *)&_header[28];
 
-    printf("width: %d\n", width);
-    printf("height: %d\n", height);
-    printf("bit_depth: %d\n\n", bit_depth);
-
-    if (bit_depth <= 8)
+    if (*_bitDepth <= 8)
     {
-        fread(color_table, sizeof(byte), 1024, stream_in);
+        fread(_colorTable, sizeof(byte), 1024, stream_in);
     }
+
+    fread(buffer, sizeof(byte), CUSTOM_IMG_SIZE, stream_in);
+
+    fclose(stream_in);
+}
+
+void imageWritter(
+    const char *imageName,
+    byte *header,
+    byte *colorTable,
+    byte *buffer,
+    int bitDepth)
+{
+    FILE *stream_out;
+    stream_out = fopen("images/cameraman_copy.bmp", "wb");
 
     fwrite(header, sizeof(byte), 54, stream_out);
 
-    byte buffer[height * width];
-
-    fread(buffer, sizeof(byte), height * width, stream_in);
-
-    if (bit_depth <= 8)
+    if (bitDepth <= 8)
     {
-        fwrite(color_table, sizeof(byte), 1024, stream_out);
+        fwrite(colorTable, sizeof(byte), 1024, stream_out);
     }
 
-    fwrite(buffer, sizeof(byte), height * width, stream_out);
+    fwrite(buffer, sizeof(byte), CUSTOM_IMG_SIZE, stream_out);
 
-    fclose(stream_in);
     fclose(stream_out);
 }
