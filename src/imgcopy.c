@@ -3,7 +3,6 @@
 
 #define BMP_HEADER_SIZE 54
 #define BMP_COLOR_TABLE_SIZE 1024
-#define CUSTOM_IMG_SIZE 1024 * 1024
 
 #define byte unsigned char
 
@@ -18,6 +17,8 @@ void imageReader(
 
 void imageWritter(
     const char *imageName,
+    const int *_height,
+    const int *_width,
     byte *header,
     byte *colorTable,
     byte *buffer,
@@ -29,13 +30,13 @@ int main()
 
     byte header[BMP_HEADER_SIZE];
     byte colorTable[BMP_COLOR_TABLE_SIZE];
-    byte buffer[CUSTOM_IMG_SIZE];
+    byte buffer[1024 * 1024];
 
     const char imgName[] = "images/man.bmp";
     const char copyImgName[] = "images/man_copy.bmp";
 
     imageReader(imgName, &height, &width, &bitDepth, header, colorTable, buffer);
-    imageWritter(copyImgName, header, colorTable, buffer, bitDepth);
+    imageWritter(copyImgName, &height, &width, header, colorTable, buffer, bitDepth);
 
     printf("Success! \n");
 }
@@ -73,13 +74,17 @@ void imageReader(
         fread(_colorTable, sizeof(byte), 1024, stream_in);
     }
 
-    fread(buffer, sizeof(byte), CUSTOM_IMG_SIZE, stream_in);
+    int imgSize = *_height * *_width;
+
+    fread(buffer, sizeof(byte), imgSize, stream_in);
 
     fclose(stream_in);
 }
 
 void imageWritter(
     const char *imageName,
+    const int *_height,
+    const int *_width,
     byte *header,
     byte *colorTable,
     byte *buffer,
@@ -95,7 +100,9 @@ void imageWritter(
         fwrite(colorTable, sizeof(byte), 1024, stream_out);
     }
 
-    fwrite(buffer, sizeof(byte), CUSTOM_IMG_SIZE, stream_out);
+    int imgSize = *_height * *_width;
+
+    fwrite(buffer, sizeof(byte), imgSize, stream_out);
 
     fclose(stream_out);
 }
