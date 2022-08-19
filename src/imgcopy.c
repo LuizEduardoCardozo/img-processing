@@ -17,7 +17,7 @@ typedef struct ImgSize ImgSize;
 ImgSize getImgSize(const char *image_name);
 
 void imageReader(
-    const char *image_name,
+    const char *imageName,
     const ImgSize *imgSize,
     int *_bitDepth,
     byte *_header,
@@ -49,14 +49,15 @@ int main()
     imageWritter(copyImgName, &imgSize, header, colorTable, buffer, bitDepth);
 
     printf("Success! \n");
+    printf("Width: %d\nHeight: %d\n", imgSize.width, imgSize.height);
 }
 
-ImgSize getImgSize(const char *image_name)
+ImgSize getImgSize(const char *imageName)
 {
     byte _header[BMP_HEADER_SIZE];
     FILE *stream_in;
 
-    stream_in = fopen("images/cameraman.bmp", "rb");
+    stream_in = fopen(imageName, "rb");
 
     if (stream_in == (FILE *)0)
     {
@@ -78,7 +79,7 @@ ImgSize getImgSize(const char *image_name)
 }
 
 void imageReader(
-    const char *image_name,
+    const char *imageName,
     const ImgSize *imgSize,
     int *_bitDepth,
     byte *_header,
@@ -87,7 +88,7 @@ void imageReader(
 {
     FILE *stream_in;
 
-    stream_in = fopen("images/cameraman.bmp", "rb");
+    stream_in = fopen(imageName, "rb");
 
     if (stream_in == (FILE *)0)
     {
@@ -122,7 +123,7 @@ void imageWritter(
     int bitDepth)
 {
     FILE *stream_out;
-    stream_out = fopen("images/cameraman_copy.bmp", "wb");
+    stream_out = fopen(imageName, "wb");
 
     fwrite(header, sizeof(byte), 54, stream_out);
 
