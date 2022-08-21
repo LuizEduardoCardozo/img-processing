@@ -14,10 +14,10 @@ struct ImgSize
 
 typedef struct ImgSize ImgSize;
 
-ImgSize getImgSize(const char *image_name);
+ImgSize getImgSize(FILE *streamIn);
 
 void imageReader(
-    const char *imageName,
+    FILE *streamIn,
     const ImgSize *imgSize,
     int *_bitDepth,
     byte *_header,
@@ -25,7 +25,7 @@ void imageReader(
     byte *buffer);
 
 void imageWritter(
-    const char *imageName,
+    FILE *streamOut,
     const ImgSize *imgSize,
     byte *header,
     byte *colorTable,
@@ -43,23 +43,40 @@ int main()
     const char imgName[] = "images/man.bmp";
     const char copyImgName[] = "images/man_copy.bmp";
 
-    ImgSize imgSize = getImgSize(imgName);
+    FILE *streamIn = fopen(imgName, "rb");
+    FILE *streamOut = fopen(copyImgName, "wb");
 
-    imageReader(imgName, &imgSize, &bitDepth, header, colorTable, buffer);
-    imageWritter(copyImgName, &imgSize, header, colorTable, buffer, bitDepth);
+    if (streamIn == (FILE *)0)
+    {
+        printf("Cannot open the file %s\n", imgName);
+        return -1;
+    }
+
+    if (streamOut == (FILE *)0)
+    {
+        printf("Cannot use the file \"%s\" as output\n", copyImgName);
+        return -1;
+    }
+
+    ImgSize imgSize = getImgSize(streamIn);
+
+    rewind(streamIn);
+
+    imageReader(streamIn, &imgSize, &bitDepth, header, colorTable, buffer);
+    imageWritter(streamOut, &imgSize, header, colorTable, buffer, bitDepth);
 
     printf("Success! \n");
     printf("Width: %d\nHeight: %d\n", imgSize.width, imgSize.height);
+
+    fclose(streamIn);
+    fclose(streamOut);
 }
 
-ImgSize getImgSize(const char *imageName)
+ImgSize getImgSize(FILE *streamIn)
 {
     byte _header[BMP_HEADER_SIZE];
-    FILE *stream_in;
 
-    stream_in = fopen(imageName, "rb");
-
-    if (stream_in == (FILE *)0)
+    if (streamIn == (FILE *)0)
     {
         printf("Unable to open the file\n");
         exit(1);
@@ -67,7 +84,7 @@ ImgSize getImgSize(const char *imageName)
 
     for (size_t i = 0; i < 54; i++)
     {
-        _header[i] = getc(stream_in);
+        _header[i] = getc(streamIn);
     }
 
     ImgSize s = {
@@ -79,61 +96,46 @@ ImgSize getImgSize(const char *imageName)
 }
 
 void imageReader(
-    const char *imageName,
+    FILE *streamIn,
     const ImgSize *imgSize,
     int *_bitDepth,
     byte *_header,
     byte *_colorTable,
     byte *buffer)
 {
-    FILE *stream_in;
-
-    stream_in = fopen(imageName, "rb");
-
-    if (stream_in == (FILE *)0)
-    {
-        printf("Unable to open the file\n");
-        exit(1);
-    }
+    rewind(streamIn);
 
     for (size_t i = 0; i < 54; i++)
     {
-        _header[i] = getc(stream_in);
+        _header[i] = getc(streamIn);
     }
 
     *_bitDepth = *(int *)&_header[28];
 
     if (*_bitDepth <= 8)
     {
-        fread(_colorTable, sizeof(byte), 1024, stream_in);
+        fread(_colorTable, sizeof(byte), 1024, streamIn);
     }
 
     int _imgSize = imgSize->height * imgSize->width;
-    fread(buffer, sizeof(byte), _imgSize, stream_in);
-
-    fclose(stream_in);
+    fread(buffer, sizeof(byte), _imgSize, streamIn);
 }
 
 void imageWritter(
-    const char *imageName,
+    FILE *streamOut,
     const ImgSize *imgSize,
     byte *header,
     byte *colorTable,
     byte *buffer,
     int bitDepth)
 {
-    FILE *stream_out;
-    stream_out = fopen(imageName, "wb");
-
-    fwrite(header, sizeof(byte), 54, stream_out);
+    fwrite(header, sizeof(byte), 54, streamOut);
 
     if (bitDepth <= 8)
     {
-        fwrite(colorTable, sizeof(byte), 1024, stream_out);
+        fwrite(colorTable, sizeof(byte), 1024, streamOut);
     }
 
     int _imgSize = imgSize->height * imgSize->width;
-    fwrite(buffer, sizeof(byte), _imgSize, stream_out);
-
-    fclose(stream_out);
+    fwrite(buffer, sizeof(byte), _imgSize, streamOut);
 }
