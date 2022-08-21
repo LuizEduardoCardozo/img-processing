@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define BMP_HEADER_SIZE 54
 #define BMP_COLOR_TABLE_SIZE 1024
@@ -30,7 +31,17 @@ void imageWritter(
     byte *header,
     byte *colorTable,
     byte *buffer,
-    int bitDepth);
+    int bitDepth,
+    bool writeBuffer);
+
+void grayScale(
+    FILE *streamIn,
+    FILE *streamOut,
+    const ImgSize *imgSize,
+    int bitDepth,
+    byte *colorTable,
+    byte *header,
+    byte *buffer);
 
 int main()
 {
@@ -60,10 +71,15 @@ int main()
 
     ImgSize imgSize = getImgSize(streamIn);
 
-    rewind(streamIn);
-
     imageReader(streamIn, &imgSize, &bitDepth, header, colorTable, buffer);
-    imageWritter(streamOut, &imgSize, header, colorTable, buffer, bitDepth);
+    grayScale(streamIn,
+              streamOut,
+              &imgSize,
+              bitDepth,
+              colorTable,
+              header,
+              buffer);
+    imageWritter(streamOut, &imgSize, header, colorTable, buffer, bitDepth, false);
 
     printf("Success! \n");
     printf("Width: %d\nHeight: %d\n", imgSize.width, imgSize.height);
@@ -81,12 +97,44 @@ ImgSize getImgSize(FILE *streamIn)
         _header[i] = getc(streamIn);
     }
 
+    rewind(streamIn);
+
     ImgSize s = {
         height : *(int *)&_header[22],
         width : *(int *)&_header[18]
     };
 
     return s;
+}
+
+void grayScale(
+    FILE *streamIn,
+    FILE *streamOut,
+    const ImgSize *imgSize,
+    int bitDepth,
+    byte *colorTable,
+    byte *header,
+    byte *buffer)
+{
+    fseek(streamIn, BMP_HEADER_SIZE, SEEK_SET);
+    fseek(streamOut, BMP_HEADER_SIZE, SEEK_SET);
+
+    int _imgSize = imgSize->height * imgSize->width;
+
+    for (size_t i = 0; i < _imgSize; i++)
+    {
+        byte r = getc(streamIn);
+        byte g = getc(streamIn);
+        byte b = getc(streamIn);
+
+        int gray_pixel = (r * 0.3) + (g * 0.59) + (b * 0.11);
+
+        for (size_t c = 0; c < 3; c++)
+            putc(gray_pixel, streamOut);
+    }
+
+    rewind(streamIn);
+    rewind(streamOut);
 }
 
 void imageReader(
@@ -111,6 +159,8 @@ void imageReader(
 
     int _imgSize = imgSize->height * imgSize->width;
     fread(buffer, sizeof(byte), _imgSize, streamIn);
+
+    rewind(streamIn);
 }
 
 void imageWritter(
@@ -119,7 +169,8 @@ void imageWritter(
     byte *header,
     byte *colorTable,
     byte *buffer,
-    int bitDepth)
+    int bitDepth,
+    bool writeBuffer)
 {
     fwrite(header, sizeof(byte), BMP_HEADER_SIZE, streamOut);
 
@@ -128,6 +179,11 @@ void imageWritter(
         fwrite(colorTable, sizeof(byte), BMP_COLOR_TABLE_SIZE, streamOut);
     }
 
-    int _imgSize = imgSize->height * imgSize->width;
-    fwrite(buffer, sizeof(byte), _imgSize, streamOut);
+    if (writeBuffer)
+    {
+        int _imgSize = imgSize->height * imgSize->width;
+        fwrite(buffer, sizeof(byte), _imgSize, streamOut);
+    }
+
+    rewind(streamOut);
 }
