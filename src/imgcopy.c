@@ -76,12 +76,6 @@ ImgSize getImgSize(FILE *streamIn)
 {
     byte _header[BMP_HEADER_SIZE];
 
-    if (streamIn == (FILE *)0)
-    {
-        printf("Unable to open the file\n");
-        exit(1);
-    }
-
     for (size_t i = 0; i < 54; i++)
     {
         _header[i] = getc(streamIn);
@@ -103,8 +97,6 @@ void imageReader(
     byte *_colorTable,
     byte *buffer)
 {
-    rewind(streamIn);
-
     for (size_t i = 0; i < 54; i++)
     {
         _header[i] = getc(streamIn);
