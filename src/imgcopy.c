@@ -76,7 +76,7 @@ ImgSize getImgSize(FILE *streamIn)
 {
     byte _header[BMP_HEADER_SIZE];
 
-    for (size_t i = 0; i < 54; i++)
+    for (size_t i = 0; i < BMP_HEADER_SIZE; i++)
     {
         _header[i] = getc(streamIn);
     }
@@ -97,7 +97,7 @@ void imageReader(
     byte *_colorTable,
     byte *buffer)
 {
-    for (size_t i = 0; i < 54; i++)
+    for (size_t i = 0; i < BMP_HEADER_SIZE; i++)
     {
         _header[i] = getc(streamIn);
     }
@@ -106,7 +106,7 @@ void imageReader(
 
     if (*_bitDepth <= 8)
     {
-        fread(_colorTable, sizeof(byte), 1024, streamIn);
+        fread(_colorTable, sizeof(byte), BMP_COLOR_TABLE_SIZE, streamIn);
     }
 
     int _imgSize = imgSize->height * imgSize->width;
@@ -121,11 +121,11 @@ void imageWritter(
     byte *buffer,
     int bitDepth)
 {
-    fwrite(header, sizeof(byte), 54, streamOut);
+    fwrite(header, sizeof(byte), BMP_HEADER_SIZE, streamOut);
 
     if (bitDepth <= 8)
     {
-        fwrite(colorTable, sizeof(byte), 1024, streamOut);
+        fwrite(colorTable, sizeof(byte), BMP_COLOR_TABLE_SIZE, streamOut);
     }
 
     int _imgSize = imgSize->height * imgSize->width;
